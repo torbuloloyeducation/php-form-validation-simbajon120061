@@ -1,7 +1,8 @@
 <?php
-$nameErr = $emailErr = $genderErr = "";
-$name = $email = $website = $comment = $gender = "";
+$nameErr = $emailErr = $genderErr = $phoneErr = $websiteErr = $passwordErr = $confirmPasswordErr = $termsErr = "";
+$name = $email = $website = $comment = $gender = $phone = $password = $confirmPassword = "";
 $submitted = false;
+$attempts = isset($_POST['attempts']) ? (int)$_POST['attempts'] + 1 : 0;
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $submitted = true;
@@ -24,11 +25,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
     }
 
-    if (!empty($_POST["website"])) {
-        $website = test_input($_POST["website"]);
-        if (!filter_var($website, FILTER_VALIDATE_URL)) {
-            $website = "";
+    // Exercise 1: Phone Number
+    if (empty($_POST["phone"])) {
+        $phoneErr = "Phone number is required";
+    } else {
+        $phone = test_input($_POST["phone"]);
+        if (!preg_match("/^[+]?[0-9 \-]{7,15}$/", $phone)) {
+            $phoneErr = "Invalid phone format";
         }
+    }
+
+    // Exercise 2: Website validation
+    $website = test_input($_POST["website"]);
+    if (!empty($website) && !filter_var($website, FILTER_VALIDATE_URL)) {
+        $websiteErr = "Invalid URL format";
     }
 
     $comment = empty($_POST["comment"]) ? "" : test_input($_POST["comment"]);
@@ -37,6 +47,26 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $genderErr = "Gender is required";
     } else {
         $gender = test_input($_POST["gender"]);
+    }
+
+    // Exercise 3: Password fields
+    $password = test_input($_POST["password"]);
+    if (empty($password)) {
+        $passwordErr = "Password is required";
+    } elseif (strlen($password) < 8) {
+        $passwordErr = "Password must be at least 8 characters";
+    }
+
+    $confirmPassword = test_input($_POST["confirmPassword"]);
+    if (empty($confirmPassword)) {
+        $confirmPasswordErr = "Confirm Password is required";
+    } elseif ($confirmPassword !== $password) {
+        $confirmPasswordErr = "Passwords do not match";
+    }
+
+    // Exercise 4: Terms checkbox
+    if (!isset($_POST['terms'])) {
+        $termsErr = "You must agree to the terms and conditions.";
     }
 }
 
@@ -47,7 +77,7 @@ function test_input($data) {
     return $data;
 }
 
-$formValid = $submitted && empty($nameErr) && empty($emailErr) && empty($genderErr);
+$formValid = $submitted && empty($nameErr) && empty($emailErr) && empty($genderErr) && empty($phoneErr) && empty($websiteErr) && empty($passwordErr) && empty($confirmPasswordErr) && empty($termsErr);
 ?>
 
 <!DOCTYPE html>
@@ -237,13 +267,32 @@ $formValid = $submitted && empty($nameErr) && empty($emailErr) && empty($genderE
         </div>
 
         <div class="field-row">
+            <label for="phone">Phone Number <span style="color:var(--error-red)">*</span></label>
+            <input type="text" id="phone" name="phone" placeholder="123-456-7890" value="<?= $phone ?>">
+            <?php if($phoneErr): ?><span class="error"><?= $phoneErr ?></span><?php endif; ?>
+        </div>
+
+        <div class="field-row">
             <label for="website">Website</label>
             <input type="text" id="website" name="website" placeholder="https://..." value="<?= $website ?>">
+            <?php if($websiteErr): ?><span class="error"><?= $websiteErr ?></span><?php endif; ?>
         </div>
 
         <div class="field-row">
             <label for="comment">Comment</label>
             <textarea id="comment" name="comment" placeholder="Tell us more..."><?= $comment ?></textarea>
+        </div>
+
+        <div class="field-row">
+            <label for="password">Password <span style="color:var(--error-red)">*</span></label>
+            <input type="password" id="password" name="password">
+            <?php if($passwordErr): ?><span class="error"><?= $passwordErr ?></span><?php endif; ?>
+        </div>
+
+        <div class="field-row">
+            <label for="confirmPassword">Confirm Password <span style="color:var(--error-red)">*</span></label>
+            <input type="password" id="confirmPassword" name="confirmPassword">
+            <?php if($confirmPasswordErr): ?><span class="error"><?= $confirmPasswordErr ?></span><?php endif; ?>
         </div>
 
         <div class="field-row">
@@ -256,6 +305,13 @@ $formValid = $submitted && empty($nameErr) && empty($emailErr) && empty($genderE
             <?php if($genderErr): ?><span class="error"><?= $genderErr ?></span><?php endif; ?>
         </div>
 
+        <div class="field-row">
+            <label class="radio-item"><input type="checkbox" name="terms" value="1" <?= isset($_POST['terms']) ? "checked" : "" ?>> I agree to the terms and conditions <span style="color:var(--error-red)">*</span></label>
+            <?php if($termsErr): ?><span class="error"><?= $termsErr ?></span><?php endif; ?>
+        </div>
+
+        <input type="hidden" name="attempts" value="<?= $attempts ?>">
+
         <button type="submit">Send Message</button>
     </form>
 
@@ -264,10 +320,13 @@ $formValid = $submitted && empty($nameErr) && empty($emailErr) && empty($genderE
             <h3>Your Input:</h3>
             <p><strong>Name:</strong> <?= $name ?></p>
             <p><strong>E-mail:</strong> <?= $email ?></p>
+            <p><strong>Phone:</strong> <?= $phone ?></p>
             <?php if (!empty($website)): ?><p><strong>Website:</strong> <?= $website ?></p><?php endif; ?>
             <p><strong>Gender:</strong> <?= $gender ?></p>
+            <p><strong>Submission attempt:</strong> <?= $attempts ?></p>
         <?php elseif ($submitted && !$formValid): ?>
             <p style="color:var(--error-red); margin:0;">Please fix the errors and try again.</p>
+            <p><strong>Submission attempt:</strong> <?= $attempts ?></p>
         <?php else: ?>
             <p style="margin:0; font-style: italic;">Results will appear here after submission.</p>
         <?php endif; ?>
