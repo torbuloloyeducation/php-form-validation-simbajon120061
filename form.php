@@ -207,7 +207,7 @@ $formValid = $submitted && empty($nameErr) && empty($emailErr) && empty($genderE
 
         /* Message Boxes */
         .success-box, .output-box {
-            margin-top: 24px;
+            margin-top: 20px;
             margin-bottom: 24px;
             padding: 16px;
             border-radius: 8px;
